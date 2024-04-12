@@ -1,0 +1,83 @@
+﻿<ribbon:RibbonWindow  xmlns:ribbon="clr-namespace:System.Windows.Controls.Ribbon;assembly=System.Windows.Controls.Ribbon" x:Class="CADP.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CADP"
+        mc:Ignorable="d"
+        Title="CAD+" Height="450" Width="800" Icon="Icons\scribble.png">
+    <Window.Resources>
+        <Style x:Key="Btnstyle" TargetType="Button">
+            <Setter  Property="Height" Value="10"/>
+            <Setter Property="Width"  Value="10"/>
+        </Style>
+        <Style x:Key="IcnStyle" TargetType="Button">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Width" Value="30"/>
+        </Style>
+    </Window.Resources>
+    <Grid x:Name="LayoutRoot">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <ribbon:Ribbon x:Name="CADP" VerticalContentAlignment="Center" Title="CAD+">
+            <ribbon:Ribbon.QuickAccessToolBar>
+                <ribbon:RibbonQuickAccessToolBar  x:Name="undoredo">
+                    <ribbon:RibbonButton x:Name="undo" SmallImageSource="Icons\undo.png" ToolTip="Undo" Click="Undo_Click"/>
+                    <ribbon:RibbonButton x:Name="redo" SmallImageSource="Icons\redo.png" ToolTip="Redo" Click ="Redo_Click"/>
+                </ribbon:RibbonQuickAccessToolBar>
+            </ribbon:Ribbon.QuickAccessToolBar>
+            <ribbon:Ribbon.ApplicationMenu>
+                <ribbon:RibbonApplicationMenu Width="35" >
+                    <RibbonApplicationMenuItem Header="_New" ImageSource="Icons\newfile.png" Click="Newfile_Click"/>
+                    <RibbonApplicationMenuItem Header="Open" ImageSource="Icons\openfile.png" Click="OpenFile_Click"/>
+                    <RibbonApplicationMenuItem Header="Save" ImageSource="Icons\saveas.png" Click="Save_Click"/>
+                    <RibbonApplicationMenuItem Header="SaveAs" ImageSource="Icons\saveas.png">
+                        <RibbonApplicationMenuItem Header="SaveAsText" ImageSource="Icons\txtfile.png" Click="TextFile_Click"/>
+                        <RibbonApplicationMenuItem Header="SaveAsBin" ImageSource="Icons\binfile.png" Click="BinFile_Click"/>
+                    </RibbonApplicationMenuItem>
+                    <RibbonApplicationMenuItem Header="Exit" ImageSource="Icons\exit.png" Click="Exit_Click"/>
+                </ribbon:RibbonApplicationMenu>
+            </ribbon:Ribbon.ApplicationMenu>
+            <ribbon:RibbonTab x:Name="HomeTab" 
+                              Header="Home">
+                <ribbon:RibbonGroup x:Name="Tools" Header="Tools">
+                    <ribbon:RibbonButton x:Name="Pick" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\cursor.png" ToolTip="Pick" Click="Pick_Click"/>
+                    <ribbon:RibbonButton x:Name="Scribble" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\signature.png" ToolTip="Scribbler" Click="Scribble_Click"/>
+                </ribbon:RibbonGroup>
+                <ribbon:RibbonGroup x:Name="Shapes" Header="Shapes">
+                    <ribbon:RibbonButton x:Name="Rectangle" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\rect.png" ToolTip="RectanglePicker" Click="Rectangle_Click"/>
+                    <ribbon:RibbonButton x:Name="Line" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\line.png" ToolTip="LinePicker" Click="Line_Click"/>
+                    <ribbon:RibbonButton x:Name="Circle" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\circle1.png" ToolTip="CirclePicker" Click="Circle_Click"/>
+                </ribbon:RibbonGroup>
+                <ribbon:RibbonGroup VerticalContentAlignment="Top" x:Name="Features" Header="Shape Features" Width="200">
+                    <StackPanel>
+                        <DockPanel VerticalAlignment="Top" Margin="10">
+                            <TextBox x:Name="ThicknessVal" Text="{Binding ElementName=slValue, Path=Value, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Center" Width="20" TextChanged="ThicknessVal_TextChanged" ToolTip="ShapeThickness"/>
+                            <Slider DockPanel.Dock="Left" Minimum="1" Maximum="3" Height="25" Width="146" TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled="True" Name="slValue" ToolTip="ShapeThickness"/>
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock HorizontalAlignment="Left" Width="40" Text="Color"/>
+                            <ToolBar HorizontalAlignment="Right" Width="140">
+                                <ribbon:RibbonButton x:Name="Red" Background="Red" Style="{StaticResource Btnstyle}" Click="Red_Click"/>
+                                <ribbon:RibbonButton x:Name="Green" Background="Green" Style="{StaticResource Btnstyle}" Click="Green_Click"/>
+                                <ribbon:RibbonButton x:Name="Blue" Background="Blue" Style="{StaticResource Btnstyle}" Click="Blue_Click"/>
+                                <ribbon:RibbonButton x:Name="Black" Background="Black" Style="{StaticResource Btnstyle}" Click="Black_Click"/>
+                            </ToolBar>
+                        </DockPanel>
+                    </StackPanel>
+                </ribbon:RibbonGroup>
+            </ribbon:RibbonTab>
+            <ribbon:RibbonTab x:Name="ViewTab" Header="View">
+                <ribbon:RibbonGroup x:Name="Zoom" Header="Zoom">
+                    <ribbon:RibbonButton x:Name="ZoomIn" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\zoomin.png" ToolTip="ZoomIn" Click="ZoomIn_Click"/>
+                    <ribbon:RibbonButton x:Name="ZoomOut" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\zoomout.png" ToolTip="ZoomOut" Click="ZoomOut_Click"/>
+                </ribbon:RibbonGroup>
+            </ribbon:RibbonTab>
+        </ribbon:Ribbon>
+        <ScrollViewer SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <local:Canvas Height="700" Width="1600"  x:Name="paintCanvas" Background="Transparent"/>
+        </ScrollViewer>
+    </Grid>
+</ribbon:RibbonWindow>

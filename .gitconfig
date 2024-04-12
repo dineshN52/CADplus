@@ -1,0 +1,44 @@
+[user]
+	email = dinesh.n@metamation.com
+	name = Dinesh N
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[core]
+	autocrlf = false
+	whitespace = -trailing-space,cr-at-eol
+	editor = Notepad++
+[alias]
+	st = status
+	sw = switch
+	di = difftool --dir-diff
+	tip = log -1 head
+	undo = restore
+	lg = log -n 20 --graph --format='%h  %C(yellow)%an%Creset  %C(green)%as%Creset  %s %C(brightblue)%d%Creset'
+	find = log --format='%h  %C(yellow)%an%Creset  %C(green)%as%Creset  %s %C(brightblue)%d%Creset' --grep
+[diff]
+	tool = winmerge
+[difftool]
+	prompt = true
+[difftool "winmerge"]
+	;cmd = "C:/Program Files/WinMerge/WinMergeU.exe" -e -r -dl /"Old $BASE/" -dr /"New $BASE/" /"$LOCAL/" /"$REMOTE/"
+	;trustExitCode = true
+        cmd = \"C:\\Program Files\\WinMerge\\WinMergeU.exe\" -e -r -u -dl \"Old $BASE\" -dr \"New $BASE\" \"$LOCAL\" \"$REMOTE\"
+        trustExitCode = true
+[merge]
+	tool = P4Merge
+	conflictstyle = diff3
+[mergetool]
+	prompt = true
+[mergetool "P4Merge"]
+	path = "C:/Program Files/Perforce/p4merge.exe"
+	keepBackup = false
+	
+[http]
+    sslverify = false
+	proxy = http://nagarajandi@srv34prox.corp.trumpf.com:80
+[credential "http://srv34prox.corp.trumpf.com"]
+    helper= manager
+	provider = generic
