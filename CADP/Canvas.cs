@@ -8,10 +8,21 @@ using BackEnd;
 using Point = BackEnd.Point;
 using Line = BackEnd.Line;
 using Rectangle = BackEnd.Rectangle;
+using System.Windows.Controls;
 
 namespace CADP;
 
 public partial class Canvas : System.Windows.Controls.Canvas {
+
+   #region Constructor---------
+   public Canvas () {
+      IsNewFile = true;
+      IsModified = false;
+      mCurrentShapeColor = "#000000";
+      mCurrentThickness = 1;
+      mScaleValue = 1;
+   }
+   #endregion 
 
    #region Methods-------------
    public void ScribbleOn () => mCurrentShape = new Scribble ();
@@ -41,25 +52,25 @@ public partial class Canvas : System.Windows.Controls.Canvas {
    public void Open () {
       if (mFile.OpenFile (out List<Shapes> f)) {
          AllShapes = f;
-         mNewfile = false;
+         IsNewFile = false;
          InvalidateVisual ();
       }
    }
 
    public void Save () {
-      if (mNewfile) {
+      if (IsNewFile) {
          if (mFile.SaveAs (AllShapes, true, true))
-            mNewfile = false;
+            IsNewFile = false;
          else return;
       } else
          mFile.Save (AllShapes);
-      mModified = false;
-      InvalidateVisual ();
+      IsModified = false;
+      RenderMainWindowTools (false);
    }
 
    public void SaveAs (bool IsText) {
-      if (mFile.SaveAs (AllShapes, IsText, mNewfile)) { mNewfile = false; mModified = false; }
-      InvalidateVisual ();
+      if (mFile.SaveAs (AllShapes, IsText, IsNewFile)) { IsNewFile = false; IsModified = false; }
+      RenderMainWindowTools (false);
    }
 
    public void Zoom (bool IsZoomIn) {
@@ -67,46 +78,57 @@ public partial class Canvas : System.Windows.Controls.Canvas {
       mScaleValue = mScaleValue < 0.8 ? 0.8 : mScaleValue;
       mScaleValue = mScaleValue > 10.0 ? 10.0 : mScaleValue;
       ScaleTransform scaleTransform = new (mScaleValue, mScaleValue);
-      this.LayoutTransform = scaleTransform;
+      LayoutTransform = scaleTransform;
+   }
+
+   public void RenderMainWindowTools (bool IsInputbar) {
+      MainWindow ParentWindow = (MainWindow)Window.GetWindow (VisualParent);
+      if (IsInputbar) ParentWindow.Inputbar.InvalidateVisual ();
+      else ParentWindow.undoredo.InvalidateVisual ();
    }
    #endregion
 
    #region Overrides-----------
    protected override void OnRender (DrawingContext dc) {
       base.OnRender (dc);
-      MainWindow ParentWindow = (MainWindow)Window.GetWindow (VisualParent);
-      ParentWindow.InvalidateVisual ();
+      RenderMainWindowTools (false);
       foreach (var shape in mShapes) {
          switch (shape) {
             case Scribble scr:
                Color sc = (Color)ColorConverter.ConvertFromString (scr.Color);
                Brush sb = new SolidColorBrush (sc);
                Pen sPen = new (sb, scr.Thickness);
-               for (int i = 0; i < scr.Points.Count - 1; i++)
-                  dc.DrawLine (sPen, new System.Windows.Point (scr.Points[i].X, scr.Points[i].Y),
-                     new System.Windows.Point (scr.Points[i + 1].X, scr.Points[i + 1].Y));
+               for (int i = 0; i < scr.Points.Count - 1; i++) {
+                  double[] A = UnitConverter.InverseTransform (scr.Points[i]);
+                  double[] B = UnitConverter.InverseTransform (scr.Points[i + 1]);
+                  dc.DrawLine (sPen, new System.Windows.Point (A[0], A[1]),
+                     new System.Windows.Point (B[0], B[1]));
+               }
                break;
             case Rectangle rectangle:
                Color rc = (Color)ColorConverter.ConvertFromString (rectangle.Color);
                Brush rb = new SolidColorBrush (rc);
                Pen rPen = new (rb, rectangle.Thickness);
-               Point A = rectangle.Points[0]; Point B = rectangle.Points[^1];
-               Rect r = new (new System.Windows.Point (A.X, A.Y), new System.Windows.Point (B.X, B.Y));
+               double[] C = UnitConverter.InverseTransform (rectangle.Points[0]);
+               double[] D = UnitConverter.InverseTransform (rectangle.Points[^1]);
+               Rect r = new (new System.Windows.Point (C[0], C[1]), new System.Windows.Point (D[0], D[1]));
                dc.DrawRectangle (Background, rPen, r);
                break;
             case Line line:
                Color lc = (Color)ColorConverter.ConvertFromString (line.Color);
                Brush lb = new SolidColorBrush (lc);
                Pen lPen = new (lb, line.Thickness);
-               dc.DrawLine (lPen, new System.Windows.Point (line.Points[0].X, line.Points[0].Y),
-                  new System.Windows.Point (line.Points[^1].X, line.Points[^1].Y));
+               double[] E = UnitConverter.InverseTransform (line.Points[0]);
+               double[] F = UnitConverter.InverseTransform (line.Points[^1]);
+               dc.DrawLine (lPen, new System.Windows.Point (E[0], E[1]),
+                  new System.Windows.Point (F[0], F[1]));
                break;
             case Circle circle:
                Color cc = (Color)ColorConverter.ConvertFromString (circle.Color);
                Brush cb = new SolidColorBrush (cc);
                Pen cPen = new (cb, circle.Thickness);
-               Point C = circle.Points[0];
-               dc.DrawEllipse (Background, cPen, new System.Windows.Point (C.X, C.Y), circle.Radius, circle.Radius);
+               double[] G = UnitConverter.InverseTransform (circle.Points[0]);
+               dc.DrawEllipse (Background, cPen, new System.Windows.Point (G[0], G[1]), circle.Radius, circle.Radius);
                break;
          }
       }
@@ -114,19 +136,20 @@ public partial class Canvas : System.Windows.Controls.Canvas {
 
    protected override void OnMouseDown (MouseButtonEventArgs e) {
       base.OnMouseDown (e);
+      if (mCurrentShape == null || mCurrentShape.Points.Count > 1) return;
       if (e.LeftButton == MouseButtonState.Pressed) {
          switch (mCurrentShape) {
             case Scribble scr:
-               scr.Points.Add (new Point (e.GetPosition (this).X, e.GetPosition (this).Y));
+               scr.Points.Add (UnitConverter.Transform (e.GetPosition (this).X, e.GetPosition (this).Y));
                break;
             case Rectangle rect:
-               rect.Points.Add (new Point (e.GetPosition (this).X, e.GetPosition (this).Y));
+               rect.Points.Add (UnitConverter.Transform (e.GetPosition (this).X, e.GetPosition (this).Y));
                break;
             case Line line:
-               line.Points.Add (new Point (e.GetPosition (this).X, e.GetPosition (this).Y));
+               line.Points.Add (UnitConverter.Transform (e.GetPosition (this).X, e.GetPosition (this).Y));
                break;
             case Circle circle:
-               circle.Points.Add (new Point (e.GetPosition (this).X, e.GetPosition (this).Y));
+               circle.Points.Add (UnitConverter.Transform (e.GetPosition (this).X, e.GetPosition (this).Y));
                break;
          }
          mCurrentShape.Color = mCurrentShapeColor;
@@ -138,35 +161,35 @@ public partial class Canvas : System.Windows.Controls.Canvas {
 
    protected override void OnMouseMove (MouseEventArgs e) {
       base.OnMouseMove (e);
-      if (e.LeftButton != MouseButtonState.Released || mCurrentShape.Points.Count < 1) return;
-      mModified = true;
+      if (mCurrentShape == null || e.LeftButton != MouseButtonState.Released || mCurrentShape.Points.Count < 1) return;
+      IsModified = true;
       switch (mCurrentShape) {
          case Scribble sr:
-            sr.Points.Add (new Point (e.GetPosition (this).X, e.GetPosition (this).Y));
-            InvalidateVisual ();
+            sr.Points.Add (UnitConverter.Transform (e.GetPosition (this).X, e.GetPosition (this).Y));
             break;
          case Rectangle rect:
-            rect.Points.Add (new Point (e.GetPosition (this).X, e.GetPosition (this).Y));
-            InvalidateVisual ();
+            rect.Points.Add (UnitConverter.Transform (e.GetPosition (this).X, e.GetPosition (this).Y));
             break;
          case Line line:
-            line.Points.Add (new Point (e.GetPosition (this).X, e.GetPosition (this).Y));
-            InvalidateVisual ();
+            line.Points.Add (UnitConverter.Transform (e.GetPosition (this).X, e.GetPosition (this).Y));
             break;
          case Circle circle:
-            double radius = Math.Sqrt ((e.GetPosition (this).X - circle.Points[0].X) * (e.GetPosition (this).X - circle.Points[0].X) +
-               (e.GetPosition (this).Y - circle.Points[0].Y) * (e.GetPosition (this).Y - circle.Points[0].Y));
-            double a = circle.Points[0].Y, b = circle.Points[0].X;
-            if (radius <= a && radius <= this.ActualHeight - a && radius <= b && radius <= this.ActualWidth - a) circle.Radius = radius;
-            InvalidateVisual ();
+            Point p = UnitConverter.Transform (e.GetPosition (this).X, e.GetPosition (this).Y);
+            double radius = Math.Sqrt ((p.X - circle.Points[0].X) * (p.X - circle.Points[0].X) +
+               (p.Y - circle.Points[0].Y) * (p.Y - circle.Points[0].Y));
+            double a = 500 - Math.Abs (circle.Points[0].Y), b = 1000 - Math.Abs (circle.Points[0].X);
+            if (radius <= a && radius <= b)
+               circle.Radius = radius;
             break;
       }
+      IsDrawing = true;
+      RenderMainWindowTools (true);
+      InvalidateVisual ();
    }
 
    protected override void OnMouseLeftButtonDown (MouseButtonEventArgs e) {
       base.OnMouseLeftButtonDown (e);
-      if (e.LeftButton != MouseButtonState.Pressed || mCurrentShape.Points.Count <= 1) return;
-      mShapes.RemoveAt (mShapes.Count - 1);
+      if (mCurrentShape == null || e.LeftButton != MouseButtonState.Pressed || mCurrentShape.Points.Count <= 1) return;
       switch (mCurrentShape) {
          case Scribble:
             mCurrentShape = new Scribble (); break;
@@ -177,6 +200,8 @@ public partial class Canvas : System.Windows.Controls.Canvas {
          case Circle:
             mCurrentShape = new Circle (); break;
       }
+      IsDrawing = false;
+      RenderMainWindowTools (true);
    }
 
    protected override void OnMouseWheel (MouseWheelEventArgs e) {
@@ -190,27 +215,43 @@ public partial class Canvas : System.Windows.Controls.Canvas {
 
    public FileManager CanvasFileManager => mFile;
 
-   public bool IsNewFile => mNewfile;
+   public bool IsNewFile { get; set; }
 
-   public bool IsModified => mModified;
+   public bool IsModified { get; set; }
+
+   public bool IsDrawing { get; set; }
 
    public string CurrentShapeColor { set => mCurrentShapeColor = value; }
 
    public int CurrentShapeThickness { set => mCurrentThickness = value; }
 
    public int UndoShapeCount => mUndoShapes.Count;
+
+   public string CurrentShapePrompt {
+      get {
+         if (mCurrentShape != null)
+            return mCurrentShape.prompt;
+         return "Pick any shapes to draw";
+      }
+   }
+
+   public StackPanel CurrentShapeStack {
+      get {
+         if (mCurrentShape != null)
+            return mCurrentShape.AddStack ();
+         return new StackPanel () { Background = Brushes.AliceBlue };
+      }
+   }
    #endregion
 
    #region Private ------------
-   private Shapes mCurrentShape = new ();
+   private Shapes? mCurrentShape;
    private List<Shapes> mShapes = new ();
    private readonly Stack<Shapes> mUndoShapes = new ();
    private readonly FileManager mFile = new ();
-   private int mCurrentThickness = 1;
-   private double mScaleValue = 1.0;
-   private bool mModified = false;
-   private bool mNewfile = true;
+   private int mCurrentThickness;
+   private double mScaleValue;
    private bool mPressedUndo;
-   private string mCurrentShapeColor = "#000000";
+   private string mCurrentShapeColor;
    #endregion
 }

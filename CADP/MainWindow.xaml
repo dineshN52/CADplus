@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CADP"
         mc:Ignorable="d"
-        Title="CAD+" Height="450" Width="800" Icon="Icons\scribble.png">
+        Title="CAD+" Height="450" Width="800" WindowState="Maximized" Icon="Icons\scribble.png">
     <Window.Resources>
         <Style x:Key="Btnstyle" TargetType="Button">
             <Setter  Property="Height" Value="10"/>
@@ -19,14 +19,15 @@
     <Grid x:Name="LayoutRoot">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <ribbon:Ribbon x:Name="CADP" VerticalContentAlignment="Center" Title="CAD+">
             <ribbon:Ribbon.QuickAccessToolBar>
-                <ribbon:RibbonQuickAccessToolBar  x:Name="undoredo">
+                <local:Toolsbar  x:Name="undoredo">
                     <ribbon:RibbonButton x:Name="undo" SmallImageSource="Icons\undo.png" ToolTip="Undo" Click="Undo_Click"/>
                     <ribbon:RibbonButton x:Name="redo" SmallImageSource="Icons\redo.png" ToolTip="Redo" Click ="Redo_Click"/>
-                </ribbon:RibbonQuickAccessToolBar>
+                </local:Toolsbar>
             </ribbon:Ribbon.QuickAccessToolBar>
             <ribbon:Ribbon.ApplicationMenu>
                 <ribbon:RibbonApplicationMenu Width="35" >
@@ -76,8 +77,17 @@
                 </ribbon:RibbonGroup>
             </ribbon:RibbonTab>
         </ribbon:Ribbon>
-        <ScrollViewer SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-            <local:Canvas Height="700" Width="1600"  x:Name="paintCanvas" Background="Transparent"/>
+        <local:cStackPanel x:Name="Inputbar" Background="AliceBlue" Grid.Row="1" Orientation="Vertical">
+            <TextBlock  x:Name="prompt" Text="Pick any Shapes to draw" Background="White"/>
+            <Grid HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+            </Grid>
+        </local:cStackPanel>
+        <ScrollViewer SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" CanContentScroll="False">
+            <local:Canvas Height="1000" Width="2000"  x:Name="paintCanvas" Background="Transparent">
+                <Line x:Name="Xaxis" X1="1000" Y1="0" X2="1000" Y2="1000" Stroke="Black" StrokeThickness="0.5" StrokeDashArray="5"/>
+                <Line x:Name="Yaxis" X1="0" Y1="500" X2="2000" Y2="500" Stroke="Black" StrokeThickness="0.5" StrokeDashArray="5"/>
+            </local:Canvas>
         </ScrollViewer>
     </Grid>
 </ribbon:RibbonWindow>
