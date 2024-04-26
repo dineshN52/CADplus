@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:CADP"
         mc:Ignorable="d"
         Title="Scribble" MaxHeight="120" MinHeight="120" MaxWidth="400" MinWidth="400" WindowStartupLocation="CenterOwner" 
-        ResizeMode="NoResize" Icon="C:\dineshn\CADP\CADP\Icons\scribble.png">
+        ResizeMode="NoResize" Icon="Icons\scribble.png">
     <Window.Resources>
         <Style x:Key="Btnstyle" TargetType="Button">
             <Setter Property="Height" Value="18"/>

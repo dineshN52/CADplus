@@ -1,25 +1,30 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls.Ribbon;
+using System.Windows.Media;
+using Xceed.Wpf.Toolkit;
+using MessageBox = System.Windows.MessageBox;
+using System.Text.RegularExpressions;
+using System.Windows.Controls;
 
 namespace CADP {
 
+   #region MainWindow------------------------------------------------------------------------------
    /// <summary>Interaction logic for MainWindow.xaml</summary>
    public partial class MainWindow : RibbonWindow {
 
-      #region Constructor-------------
+      #region Constructor--------------------------------------------
       public MainWindow () {
          InitializeComponent ();
          Closing += MainWindow_Closing;
-
       }
       #endregion
 
-      #region Properties----------
+      #region Properties---------------------------------------------
       public Canvas Canvas => paintCanvas;
       #endregion
 
-      #region Methods------------------
+      #region Methods------------------------------------------------
       private void Newfile_Click (object sender, RoutedEventArgs e) {
          MainWindow w = new ();
          w.Show ();
@@ -61,24 +66,36 @@ namespace CADP {
          else SystemCommands.CloseWindow (this);
       }
 
-      private void ThicknessVal_TextChanged (object sender, System.Windows.Controls.TextChangedEventArgs e) {
-         if (paintCanvas != null)
-            paintCanvas.CurrentShapeThickness = (int)double.Parse (ThicknessVal.Text);
+      private void ThicknessVal_TextChanged (object sender, TextChangedEventArgs e) {
+         if (paintCanvas != null && paintCanvas.CurrentShape != null) {
+            paintCanvas.CurrentShapeThickness = ThicknessVal.Text != "" ? (int)double.Parse (ThicknessVal.Text) : 1;
+            paintCanvas.CurrentShape.Thickness = paintCanvas.CurrentShapeThickness;
+         }
       }
 
       private void Pick_Click (object sender, RoutedEventArgs e) => paintCanvas.Pick ();
 
-      private void Red_Click (object sender, RoutedEventArgs e) => paintCanvas.CurrentShapeColor = "#FF0000";
-
-      private void Green_Click (object sender, RoutedEventArgs e) => paintCanvas.CurrentShapeColor = "#00FF00";
-
-      private void Blue_Click (object sender, RoutedEventArgs e) => paintCanvas.CurrentShapeColor = "#0000FF";
-
-      private void Black_Click (object sender, RoutedEventArgs e) => paintCanvas.CurrentShapeColor = "#000000";
-
       private void ZoomIn_Click (object sender, RoutedEventArgs e) => paintCanvas.Zoom (true);
 
       private void ZoomOut_Click (object sender, RoutedEventArgs e) => paintCanvas.Zoom (false);
+
+      private void ClrPicker_SelectedColorChanged (object sender, RoutedPropertyChangedEventArgs<Color?> e) {
+         Color? col = ((ColorPicker)sender).SelectedColor;
+         if (paintCanvas.CurrentShape != null) {
+            paintCanvas.CurrentShape.Color = col != null ? ColorToHexString (col.Value) : "#000000";
+            paintCanvas.CurrentShapeColor = paintCanvas.CurrentShape.Color;
+         }
+      }
+
+      public static string ColorToHexString (Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+
+      private void ThicknessVal_PreviewTextInput (object sender, System.Windows.Input.TextCompositionEventArgs e) {
+         var combinedText = ((TextBox)sender).Text + e.Text;
+         if (!Regex.IsMatch (combinedText, "^[123]$")) {
+            e.Handled = true;
+         }
+      }
       #endregion
    }
+   #endregion
 }

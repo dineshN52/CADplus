@@ -1,30 +1,36 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Windows;
+using System.Windows.Shapes;
 
 namespace BackEnd;
 
 /// <summary>Class to manage opening and saving of the files(Text and Binary files)</summary>
 public class FileManager {
 
-   #region Methods-------------
-   public bool OpenFile (out List<Shapes> f) {
+   #region Methods---------------------------------------------------
+   public bool OpenFile (out List<Shape> f) {
       OpenFileDialog open = new () {
          Filter = "Text Files(*.txt)|*.txt|BIN Files(*.bin)|*.bin",
       };
-      f = new List<Shapes> ();
+      f = new List<Shape> ();
       if (open.ShowDialog () == true) {
          int i = open.FilterIndex;
          if (i == 1) {
             string[] allShapes = File.ReadAllLines (open.FileName);
-            if (allShapes[0] == "Scribble" || allShapes[0] == "Rectangle" || allShapes[0] == "Line" || allShapes[0] == "Circle") f = Open (allShapes);
+            if (allShapes[0] is "Scribble" or "Rectangle" or "Line" or "Circle") f = Open (allShapes);
             else throw new FormatException ("Input is not in correct format");
          } else if (i == 2) {
-            byte[] allBytes = File.ReadAllBytes (open.FileName);
-            f = Open (allBytes);
+            using FileStream fs = new (open.FileName, FileMode.Open);
+            BinaryReader Br = new (fs);
+            long numBytes = new FileInfo (open.FileName).Length;
+            f = Open (Br, (int)numBytes);
          }
          mCurrentFileName = open.FileName;
          return true;
@@ -32,8 +38,8 @@ public class FileManager {
       return false;
    }
 
-   private static List<Shapes> Open (string[] allShapes) {
-      List<Shapes> all = new ();
+   private static List<Shape> Open (string[] allShapes) {
+      List<Shape> all = new ();
       int limits = 0;
       for (int i = 0; i < allShapes.Length; i = limits) {
          string s = allShapes[i];
@@ -79,85 +85,58 @@ public class FileManager {
       return all;
    }
 
-   private static List<Shapes> Open (byte[] allBytes) {
-      List<Shapes> all = new ();
-      int limits = 0;
-      for (int i = 0; i < allBytes.Length; i = limits) {
-         byte[] shape = new byte[4]; byte[] color = new byte[7]; byte[] thickness = new byte[4];
-         Array.Copy (allBytes, i, shape, 0, 4);
-         Array.Copy (allBytes, i + 5, color, 0, 7);
-         Array.Copy (allBytes, i + 12, thickness, 0, 4);
-         int s = BitConverter.ToInt32 (shape, 0);
-         switch (s) {
+   public List<Shape> Open (BinaryReader br, int counts) {
+      List<Shape> all = new ();
+      while (counts > 0) {
+         var s = br.ReadBytes (4);
+         int sr = BitConverter.ToInt32 (s, 0);
+         br.Read ();
+         switch (sr) {
             case 1:
-               byte[] count = new byte[4];
-               Array.Copy (allBytes, i + 16, count, 0, 4);
                Scribble scr = new () {
-                  Color = Encoding.Default.GetString (color),
-                  Thickness = BitConverter.ToInt32 (thickness, 0)
+                  Color = Encoding.Default.GetString (br.ReadBytes (7)),
+                  Thickness = BitConverter.ToInt32 (br.ReadBytes (4), 0)
                };
-               limits = (limits + 20) + (BitConverter.ToInt32 (count, 0) * 16);
-               for (int j = i + 20; j < limits; j += 16) {
-                  byte[] x = new byte[8]; byte[] y = new byte[8];
-                  Array.Copy (allBytes, j, x, 0, 8);
-                  Array.Copy (allBytes, j + 8, y, 0, 8);
-                  Point p = new (BitConverter.ToDouble (x), BitConverter.ToDouble (y));
+               int count = BitConverter.ToInt32 (br.ReadBytes (4), 0);
+               for (int j = scr.Points.Count; j < count; j++) {
+                  Point p = new (BitConverter.ToDouble (br.ReadBytes (8)), BitConverter.ToDouble (br.ReadBytes (8)));
                   scr.Points.Add (p);
                }
                all.Add (scr);
+               counts -= (count * 16) + 20;
                break;
             case 2:
                Line line = new () {
-                  Color = Encoding.Default.GetString (color),
-                  Thickness = BitConverter.ToInt32 (thickness, 0)
+                  Color = Encoding.Default.GetString (br.ReadBytes (7)),
+                  Thickness = BitConverter.ToInt32 (br.ReadBytes (4), 0)
                };
-               limits += 48;
-               for (int j = i + 16; j < limits; j += 32) {
-                  byte[] x1 = new byte[8]; byte[] y1 = new byte[8]; byte[] x2 = new byte[8]; byte[] y2 = new byte[8];
-                  Array.Copy (allBytes, j, x1, 0, 8);
-                  Array.Copy (allBytes, j + 8, y1, 0, 8);
-                  Array.Copy (allBytes, j + 16, x2, 0, 8);
-                  Array.Copy (allBytes, j + 24, y2, 0, 8);
-                  Point X = new (BitConverter.ToDouble (x1), BitConverter.ToDouble (y1));
-                  Point Y = new (BitConverter.ToDouble (x2), BitConverter.ToDouble (y2));
-                  line.Points.Add (X); line.Points.Add (Y);
-               }
+               Point X = new (BitConverter.ToDouble (br.ReadBytes (8)), BitConverter.ToDouble (br.ReadBytes (8)));
+               Point Y = new (BitConverter.ToDouble (br.ReadBytes (8)), BitConverter.ToDouble (br.ReadBytes (8)));
+               line.Points.Add (X); line.Points.Add (Y);
                all.Add (line);
+               counts -= 48;
                break;
             case 3:
                Rectangle rect = new () {
-                  Color = Encoding.Default.GetString (color),
-                  Thickness = BitConverter.ToInt32 (thickness, 0)
+                  Color = Encoding.Default.GetString (br.ReadBytes (7)),
+                  Thickness = BitConverter.ToInt32 (br.ReadBytes (4), 0)
                };
-               limits += 48;
-               for (int j = i + 16; j < limits; j += 32) {
-                  byte[] startX = new byte[8]; byte[] startY = new byte[8]; byte[] endX = new byte[8]; byte[] endY = new byte[8];
-                  Array.Copy (allBytes, j, startX, 0, 8);
-                  Array.Copy (allBytes, j + 8, startY, 0, 8);
-                  Array.Copy (allBytes, j + 16, endX, 0, 8);
-                  Array.Copy (allBytes, j + 24, endY, 0, 8);
-                  Point X = new (BitConverter.ToDouble (startX), BitConverter.ToDouble (startY));
-                  Point Y = new (BitConverter.ToDouble (endX), BitConverter.ToDouble (endY));
-                  rect.Points.Add (X); rect.Points.Add (Y);
-               }
+               Point P = new (BitConverter.ToDouble (br.ReadBytes (8)), BitConverter.ToDouble (br.ReadBytes (8)));
+               Point Q = new (BitConverter.ToDouble (br.ReadBytes (8)), BitConverter.ToDouble (br.ReadBytes (8)));
+               rect.Points.Add (P); rect.Points.Add (Q);
                all.Add (rect);
+               counts -= 48;
                break;
             case 4:
                Circle circle = new () {
-                  Color = Encoding.Default.GetString (color),
-                  Thickness = BitConverter.ToInt32 (thickness, 0)
+                  Color = Encoding.Default.GetString (br.ReadBytes (7)),
+                  Thickness = BitConverter.ToInt32 (br.ReadBytes (4), 0)
                };
-               limits += 40;
-               for (int j = i + 16; j < limits; j += 24) {
-                  byte[] centerX = new byte[8]; byte[] centerY = new byte[8]; byte[] radius = new byte[8];
-                  Array.Copy (allBytes, j, centerX, 0, 8);
-                  Array.Copy (allBytes, j + 8, centerY, 0, 8);
-                  Array.Copy (allBytes, j + 16, radius, 0, 8);
-                  Point center = new (BitConverter.ToDouble (centerX), BitConverter.ToDouble (centerY));
-                  circle.Radius = BitConverter.ToDouble (radius, 0);
-                  circle.Points.Add (center);
-               }
+               Point center = new (BitConverter.ToDouble (br.ReadBytes (8)), BitConverter.ToDouble (br.ReadBytes (8)));
+               circle.Radius = BitConverter.ToDouble (br.ReadBytes (8), 0);
+               circle.Points.Add (center);
                all.Add (circle);
+               counts -= 40;
                break;
             default:
                throw new FormatException ("Input is not in correct format");
@@ -166,8 +145,7 @@ public class FileManager {
       return all;
    }
 
-
-   public bool SaveAs (List<Shapes> allShapes, bool IsText, bool IsNewFile) {
+   public bool SaveAs (List<Shape> allShapes, bool IsText, bool IsNewFile) {
       SaveFileDialog dialog = new () {
          FileName = "Untitled",
          Filter = "Text Files(*.txt)|*.txt|BIN Files(*.bin)|*.bin|All(*.*)|*",
@@ -181,7 +159,7 @@ public class FileManager {
       return false;
    }
 
-   public void Save (List<Shapes> allShapes) {
+   public void Save (List<Shape> allShapes) {
       if (mCurrentFileName != null) {
          string ext = string.Join ("", mCurrentFileName.TakeLast (3).ToArray ());
          bool IsText = ext == "txt";
@@ -189,7 +167,7 @@ public class FileManager {
       }
    }
 
-   private static void ActualSave (List<Shapes> allShapes, bool IsText, string fileName) {
+   private static void ActualSave (List<Shape> allShapes, bool IsText, string fileName) {
       if (IsText) {
          StringBuilder newFile = new ();
          foreach (var file in allShapes)
@@ -201,7 +179,8 @@ public class FileManager {
          bw = BinaryWrite (ref bw, allShapes);
       }
    }
-   private static BinaryWriter BinaryWrite (ref BinaryWriter bw, List<Shapes> allShapes) {
+
+   private static BinaryWriter BinaryWrite (ref BinaryWriter bw, List<Shape> allShapes) {
       foreach (var file in allShapes) {
          switch (file) {
             case Scribble scr:
@@ -246,7 +225,7 @@ public class FileManager {
    }
    #endregion
 
-   #region Field---------------
+   #region Field-----------------------------------------------------
    public string mCurrentFileName = string.Empty;
    #endregion
 }

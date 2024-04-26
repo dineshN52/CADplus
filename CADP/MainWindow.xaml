@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:local="clr-namespace:CADP"
         mc:Ignorable="d"
         Title="CAD+" Height="450" Width="800" WindowState="Maximized" Icon="Icons\scribble.png">
@@ -48,26 +49,25 @@
                     <ribbon:RibbonButton x:Name="Scribble" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\signature.png" ToolTip="Scribbler" Click="Scribble_Click"/>
                 </ribbon:RibbonGroup>
                 <ribbon:RibbonGroup x:Name="Shapes" Header="Shapes">
-                    <ribbon:RibbonButton x:Name="Rectangle" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\rect.png" ToolTip="RectanglePicker" Click="Rectangle_Click"/>
-                    <ribbon:RibbonButton x:Name="Line" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\line.png" ToolTip="LinePicker" Click="Line_Click"/>
-                    <ribbon:RibbonButton x:Name="Circle" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\circle1.png" ToolTip="CirclePicker" Click="Circle_Click"/>
+                    <ribbon:RibbonButton x:Name="Rectangle" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\rect.png" ToolTip="Rectangle" Click="Rectangle_Click"/>
+                    <ribbon:RibbonButton x:Name="Line" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\line.png" ToolTip="Line" Click="Line_Click"/>
+                    <ribbon:RibbonButton x:Name="Circle" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\circle1.png" ToolTip="Circle" Click="Circle_Click"/>
                 </ribbon:RibbonGroup>
-                <ribbon:RibbonGroup VerticalContentAlignment="Top" x:Name="Features" Header="Shape Features" Width="200">
-                    <StackPanel>
-                        <DockPanel VerticalAlignment="Top" Margin="10">
-                            <TextBox x:Name="ThicknessVal" Text="{Binding ElementName=slValue, Path=Value, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" TextAlignment="Center" Width="20" TextChanged="ThicknessVal_TextChanged" ToolTip="ShapeThickness"/>
-                            <Slider DockPanel.Dock="Left" Minimum="1" Maximum="3" Height="25" Width="146" TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled="True" Name="slValue" ToolTip="ShapeThickness"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock HorizontalAlignment="Left" Width="40" Text="Color"/>
-                            <ToolBar HorizontalAlignment="Right" Width="140">
-                                <ribbon:RibbonButton x:Name="Red" Background="Red" Style="{StaticResource Btnstyle}" Click="Red_Click"/>
-                                <ribbon:RibbonButton x:Name="Green" Background="Green" Style="{StaticResource Btnstyle}" Click="Green_Click"/>
-                                <ribbon:RibbonButton x:Name="Blue" Background="Blue" Style="{StaticResource Btnstyle}" Click="Blue_Click"/>
-                                <ribbon:RibbonButton x:Name="Black" Background="Black" Style="{StaticResource Btnstyle}" Click="Black_Click"/>
-                            </ToolBar>
-                        </DockPanel>
-                    </StackPanel>
+                <ribbon:RibbonGroup VerticalContentAlignment="Top" x:Name="Features" Header="Shape Features" Width="150">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Shape Thickness" Margin="2" ToolTip="ShapeThickness"/>
+                        <TextBox Grid.Column="1" x:Name="ThicknessVal" Margin="2" TextAlignment="Center" Width="20" TextChanged="ThicknessVal_TextChanged" PreviewTextInput="ThicknessVal_PreviewTextInput" ToolTip="ShapeThickness"/>
+                        <TextBlock Grid.Row="1" HorizontalAlignment="Center" Margin="2" VerticalAlignment="Center" Width="40" TextAlignment="Center" Text="Color"/>
+                        <xctk:ColorPicker Name="ClrPicker" Grid.Row="1" Margin="2" SelectedColorChanged="ClrPicker_SelectedColorChanged" Grid.Column="1"/>
+                    </Grid>
                 </ribbon:RibbonGroup>
             </ribbon:RibbonTab>
             <ribbon:RibbonTab x:Name="ViewTab" Header="View">
@@ -77,7 +77,7 @@
                 </ribbon:RibbonGroup>
             </ribbon:RibbonTab>
         </ribbon:Ribbon>
-        <local:cStackPanel x:Name="Inputbar" Background="AliceBlue" Grid.Row="1" Orientation="Vertical">
+        <local:cStackPanel x:Name="Inputbar" Grid.Row="1" Background="AliceBlue" Orientation="Vertical">
             <TextBlock  x:Name="prompt" Text="Pick any Shapes to draw" Background="White"/>
             <Grid HorizontalAlignment="Left" VerticalAlignment="Bottom">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top"/>

@@ -7,7 +7,7 @@ namespace CADP {
    /// <summary>Interaction logic for SaveMessagePop.xaml</summary>
    public partial class SaveMessagePop : Window {
 
-      #region Constructor------------------
+      #region Constructor--------------------------------------------
       public SaveMessagePop (CancelEventArgs eCancel, FileManager File, bool IsNewFile) {
          InitializeComponent ();
          Text.Text = IsNewFile ? "Do you want to Save the changes to" + "\nuntitled?" :
@@ -18,13 +18,13 @@ namespace CADP {
       }
       #endregion
 
-      #region Properties----------
+      #region Properties---------------------------------------------
       private CancelEventArgs MainCancelEvent => mMainCloseEvent;
 
       public Canvas OwnerCanvas => ((MainWindow)Owner).Canvas;
       #endregion
 
-      #region Methods-------------
+      #region Methods------------------------------------------------
       private void Yes_Click (object sender, RoutedEventArgs e) {
          IsClickedYesOrNo = true;
          if (OwnerCanvas.IsNewFile) {
@@ -48,7 +48,7 @@ namespace CADP {
       }
       #endregion
 
-      #region Private-------------
+      #region Private------------------------------------------------
       private readonly FileManager mFile = new ();
       private readonly CancelEventArgs mMainCloseEvent;
       private bool IsClickedYesOrNo;

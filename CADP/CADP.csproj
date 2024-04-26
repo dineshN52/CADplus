@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Icons\binfile.png" />
     <Resource Include="Icons\circle1.png" />
     <Resource Include="Icons\cursor.png" />
