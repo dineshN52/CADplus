@@ -1,61 +1,80 @@
 ﻿using System.Windows.Input;
+using System.Windows.Media;
+using BackEnd;
 
 namespace CADP;
 
-public abstract class Widget {
+public interface IWidget {
 
-   public Widget (Canvas canvas) {
-      owner = canvas;
-   }
+   void Attach (object sender);
 
-   public void Attach () {
+   void Detach (object sender);
+
+   void OnMouseDown (object sender, MouseButtonEventArgs e);
+
+   void OnMouseMove (object sender, MouseEventArgs e);
+}
+
+public class Widget : IWidget {
+
+   public Widget (Canvas m) => owner = m;
+
+   public void Attach (object sender) {
+      mInvProjXfm = owner.InvProjXfm;
       owner.MouseDown += OnMouseDown;
       owner.MouseMove += OnMouseMove;
    }
 
-   public void Detach () {
+   public void Detach (object sender) {
       owner.MouseDown -= OnMouseDown;
       owner.MouseMove -= OnMouseMove;
    }
 
-   public void OnMouseDown (object sender, MouseButtonEventArgs e) {
+   public virtual void OnMouseDown (object sender, MouseButtonEventArgs e) {
       if (e.LeftButton == MouseButtonState.Pressed && owner.CurrentShape != null) {
          if (owner.CurrentShape.Points.Count == 0) {
-            owner.CurrentShape.Points.Add (UnitConverter.Transform (e.GetPosition (owner).X, e.GetPosition (owner).Y, owner.Height, owner.Width));
+            System.Windows.Point p = mInvProjXfm.Transform (e.GetPosition (owner));
+            owner.CurrentShape.Points.Add (new Point (p.X, p.Y));
             owner.AllShapes.Add (owner.CurrentShape);
             if (owner.IsPressedUndo) owner.UndoShapes.Clear ();
             owner.IsDrawing = true;
             owner.RenderMainWindowTools (true);
-         } else {
+         } else
             owner.AddNewShapeObject ();
-         }
       }
    }
 
-   public void OnMouseMove (object sender, MouseEventArgs e) {
+   public virtual void OnMouseMove (object sender, MouseEventArgs e) {
       if (e.LeftButton != MouseButtonState.Released || owner.CurrentShape == null || owner.CurrentShape.Points.Count < 1) return;
-      owner.CurrentShape.Points.Add (UnitConverter.Transform (e.GetPosition (owner).X, e.GetPosition (owner).Y, owner.Height, owner.Width));
+      System.Windows.Point p = mInvProjXfm.Transform (e.GetPosition (owner));
+      owner.CurrentShape.Points.Add (new Point (p.X, p.Y));
       owner.IsModified = true;
       owner.RenderMainWindowTools (true);
       owner.InvalidateVisual ();
    }
 
+   public Matrix InvProjXfm { get => mInvProjXfm; set => mInvProjXfm = value; }
 
-   Canvas owner;
+   Canvas owner = new ();
+   Matrix mInvProjXfm;
 }
 
 public class RectangleWidget : Widget {
-   public RectangleWidget (Canvas canvas) : base (canvas) { }
+   public RectangleWidget (Canvas m) : base (m) {
+   }
 }
 
 public class LineWidget : Widget {
-   public LineWidget (Canvas canvas) : base (canvas) { }
+   public LineWidget (Canvas m) : base (m) {
+   }
 }
 
 public class CircleWidget : Widget {
-   public CircleWidget (Canvas canvas) : base (canvas) { }
+   public CircleWidget (Canvas m) : base (m) {
+   }
 }
 
-public class ScribbleWidget : Widget {
-   public ScribbleWidget (Canvas canvas) : base (canvas) { }
+public class ConnectedLineWidget : Widget {
+   public ConnectedLineWidget (Canvas m) : base (m) {
+   }
 }

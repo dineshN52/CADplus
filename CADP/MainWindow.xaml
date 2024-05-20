@@ -20,7 +20,7 @@
     <Grid x:Name="LayoutRoot">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <!--<RowDefinition Height="Auto"/>-->
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <ribbon:Ribbon x:Name="CADP" VerticalContentAlignment="Center" Title="CAD+">
@@ -46,11 +46,10 @@
                               Header="Home">
                 <ribbon:RibbonGroup x:Name="Tools" Header="Tools">
                     <ribbon:RibbonButton x:Name="Pick" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\cursor.png" ToolTip="Pick" Click="Pick_Click"/>
-                    <ribbon:RibbonButton x:Name="Scribble" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\signature.png" ToolTip="Scribbler" Click="Scribble_Click"/>
                 </ribbon:RibbonGroup>
                 <ribbon:RibbonGroup x:Name="Shapes" Header="Shapes">
-                    <ribbon:RibbonButton x:Name="Rectangle" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\rect.png" ToolTip="Rectangle" Click="Rectangle_Click"/>
                     <ribbon:RibbonButton x:Name="Line" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\line.png" ToolTip="Line" Click="Line_Click"/>
+                    <ribbon:RibbonButton x:Name="Rectangle" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\rect.png" ToolTip="Rectangle" Click="Rectangle_Click"/>
                     <ribbon:RibbonButton x:Name="Circle" Style="{StaticResource IcnStyle}" SmallImageSource="Icons\circle1.png" ToolTip="Circle" Click="Circle_Click"/>
                 </ribbon:RibbonGroup>
                 <ribbon:RibbonGroup VerticalContentAlignment="Top" x:Name="Features" Header="Shape Features" Width="150">
@@ -77,17 +76,23 @@
                 </ribbon:RibbonGroup>
             </ribbon:RibbonTab>
         </ribbon:Ribbon>
-        <local:cStackPanel x:Name="Inputbar" Grid.Row="1" Background="AliceBlue" Orientation="Vertical">
-            <TextBlock  x:Name="prompt" Text="Pick any Shapes to draw" Background="White"/>
-            <Grid HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <DockPanel x:Name="ConetntPage" Grid.Row="1">
+            <Grid DockPanel.Dock="Top">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <local:cStackPanel x:Name="Inputbar" Background="AliceBlue" Orientation="Vertical">
+                    <TextBlock  x:Name="prompt" Text="Pick any Shapes to draw" Background="White"/>
+                    <Grid HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    </Grid>
+                </local:cStackPanel>
+                <ScrollViewer SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" CanContentScroll="False">
+                    <local:Canvas Height="600" Width="1600" x:Name="paintCanvas" Background="Transparent"/>
+                </ScrollViewer>
             </Grid>
-        </local:cStackPanel>
-        <ScrollViewer SelectiveScrollingGrid.SelectiveScrollingOrientation="Both" Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" CanContentScroll="False">
-            <local:Canvas Height="1000" Width="2000"  x:Name="paintCanvas" Background="Transparent">
-                <Line x:Name="Xaxis" X1="1000" Y1="0" X2="1000" Y2="1000" Stroke="Black" StrokeThickness="0.5" StrokeDashArray="5"/>
-                <Line x:Name="Yaxis" X1="0" Y1="500" X2="2000" Y2="500" Stroke="Black" StrokeThickness="0.5" StrokeDashArray="5"/>
-            </local:Canvas>
-        </ScrollViewer>
+            <TextBlock x:Name="MousePointpresenter" FontSize="16" MaxHeight="35" MinHeight="18" DockPanel.Dock="Bottom" ></TextBlock>
+        </DockPanel>
     </Grid>
 </ribbon:RibbonWindow>

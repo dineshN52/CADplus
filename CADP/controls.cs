@@ -3,14 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Ribbon;
 using System.Windows.Data;
 using System.Windows.Media;
-using Point = BackEnd.Point;
 namespace CADP;
-
-public static class UnitConverter {
-   public static Point Transform (double X, double Y, double Height, double Width) => new (X - Width / 2, Height / 2 - Y);
-
-   public static System.Windows.Point InverseTransform (Point P, double Height, double Width) => new (P.X + Width / 2, Height / 2 - P.Y);
-}
 
 public class Toolsbar : RibbonQuickAccessToolBar {
 
@@ -38,9 +31,9 @@ public class cStackPanel : StackPanel {
          Source = ParentWindow.Canvas.CurrentShapePrompt
       };
       ((TextBlock)Children[0]).SetBinding (TextBlock.TextProperty, promptBind);
-      if (ParentWindow.Canvas.IsDrawing) {
-         ((Grid)Children[1]).Children.Clear ();
-         ((Grid)Children[1]).Children.Add (ParentWindow.Canvas.CurrentShapeStack);
-      }
+      // if (ParentWindow.Canvas.IsDrawing) {
+      ((Grid)Children[1]).Children.Clear ();
+      ((Grid)Children[1]).Children.Add (ParentWindow.Canvas.CurrentShapeStack);
+      // }
    }
 }

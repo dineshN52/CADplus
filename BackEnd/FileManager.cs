@@ -1,13 +1,9 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Windows;
-using System.Windows.Shapes;
 
 namespace BackEnd;
 
@@ -44,15 +40,6 @@ public class FileManager {
       for (int i = 0; i < allShapes.Length; i = limits) {
          string s = allShapes[i];
          switch (s) {
-            case "Scribble":
-               Scribble sr = new () {
-                  Color = allShapes[i + 1], Thickness = int.Parse (allShapes[i + 2])
-               };
-               limits = limits + 4 + int.Parse (allShapes[i + 3]);
-               for (int j = i + 4; j < limits; j++)
-                  sr.Points.Add (Point.Parse (allShapes[j]));
-               all.Add (sr);
-               break;
             case "Line":
                Line line = new () {
                   Color = allShapes[i + 1], Thickness = int.Parse (allShapes[i + 2])
@@ -93,19 +80,6 @@ public class FileManager {
          br.Read ();
          switch (sr) {
             case 1:
-               Scribble scr = new () {
-                  Color = Encoding.Default.GetString (br.ReadBytes (7)),
-                  Thickness = BitConverter.ToInt32 (br.ReadBytes (4), 0)
-               };
-               int count = BitConverter.ToInt32 (br.ReadBytes (4), 0);
-               for (int j = scr.Points.Count; j < count; j++) {
-                  Point p = new (BitConverter.ToDouble (br.ReadBytes (8)), BitConverter.ToDouble (br.ReadBytes (8)));
-                  scr.Points.Add (p);
-               }
-               all.Add (scr);
-               counts -= (count * 16) + 20;
-               break;
-            case 2:
                Line line = new () {
                   Color = Encoding.Default.GetString (br.ReadBytes (7)),
                   Thickness = BitConverter.ToInt32 (br.ReadBytes (4), 0)
@@ -116,7 +90,7 @@ public class FileManager {
                all.Add (line);
                counts -= 48;
                break;
-            case 3:
+            case 2:
                Rectangle rect = new () {
                   Color = Encoding.Default.GetString (br.ReadBytes (7)),
                   Thickness = BitConverter.ToInt32 (br.ReadBytes (4), 0)
@@ -127,7 +101,7 @@ public class FileManager {
                all.Add (rect);
                counts -= 48;
                break;
-            case 4:
+            case 3:
                Circle circle = new () {
                   Color = Encoding.Default.GetString (br.ReadBytes (7)),
                   Thickness = BitConverter.ToInt32 (br.ReadBytes (4), 0)
@@ -183,18 +157,8 @@ public class FileManager {
    private static BinaryWriter BinaryWrite (ref BinaryWriter bw, List<Shape> allShapes) {
       foreach (var file in allShapes) {
          switch (file) {
-            case Scribble scr:
-               bw.Write (1);
-               if (scr.Color != null) bw.Write (scr.Color);
-               bw.Write (scr.Thickness);
-               bw.Write (scr.Points.Count);
-               foreach (var point in scr.Points) {
-                  bw.Write (point.X);
-                  bw.Write (point.Y);
-               }
-               break;
             case Line line:
-               bw.Write (2);
+               bw.Write (1);
                if (line.Color != null) bw.Write (line.Color);
                bw.Write (line.Thickness);
                bw.Write (line.Points[0].X);
@@ -203,7 +167,7 @@ public class FileManager {
                bw.Write (line.Points[^1].Y);
                break;
             case Rectangle rect:
-               bw.Write (3);
+               bw.Write (2);
                if (rect.Color != null) bw.Write (rect.Color);
                bw.Write (rect.Thickness);
                bw.Write (rect.Points[0].X);
@@ -212,7 +176,7 @@ public class FileManager {
                bw.Write (rect.Points[^1].Y);
                break;
             case Circle circle:
-               bw.Write (4);
+               bw.Write (3);
                if (circle.Color != null) bw.Write (circle.Color);
                bw.Write (circle.Thickness);
                bw.Write (circle.Points[0].X);

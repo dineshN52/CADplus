@@ -1,46 +1,26 @@
 using System.Collections.Generic;
 using System.Text;
 using System;
+using Utils;
 
 namespace BackEnd;
 /// <summary>Class which creates custom shapes</summary>
-public class Shape {
+public abstract class Shape {
 
    public List<Point> Points = new ();
 
-   public virtual string? Color { get; set; }
+   public string? Color { get; set; }
 
-   public virtual int Thickness { get; set; }
+   public int Thickness { get; set; }
 
-   public virtual string prompt => string.Empty;
+   public abstract string prompt { get; }
 
-   public virtual Dictionary<string, double>? Dimension { get; set; }
+   public abstract Dictionary<string, double> GetDimension ();
+
+   public abstract void Draw (DrawingCommands cmd);
+
 }
-public class Scribble : Shape {
 
-   public override string ToString () {
-      StringBuilder s = new ();
-      s.AppendLine ("Scribble");
-      s.AppendLine (Color);
-      s.AppendLine (Thickness.ToString ());
-      s.AppendLine (Points.Count.ToString ());
-      foreach (var p in Points)
-         s.AppendLine (p.ToString ());
-      return s.ToString ();
-   }
-
-   public override string prompt { get => Points.Count > 0 ? "Pick endpoint for scribble" : "Start scribbling"; }
-
-   public override Dictionary<string, double>? Dimension {
-      get {
-         Dictionary<string, double> st = new () {
-            { "StartX", Points[0].X }
-            ,{ "StartY", Points [0].Y },
-         };
-         return st;
-      }
-   }
-}
 public class Line : Shape {
    public override string ToString () {
       StringBuilder s = new ();
@@ -52,20 +32,21 @@ public class Line : Shape {
       return s.ToString ();
    }
 
+   public override void Draw (DrawingCommands cmd) {
+      if (Color != null)
+         cmd.DrawLine (Points[0].X, Points[0].Y, Points[^1].X, Points[^1].Y, Color, Thickness);
+   }
+
+   public override Dictionary<string, double> GetDimension () => new () {
+      { "StartX", Points[0].X},
+      { "StartY", Points [0].Y },
+      {"Length",Length}
+   };
+
    public override string prompt => Points.Count > 0 ? "Pick End point" : "Pick Beginning point";
 
    public double Length => Points.Count > 0 ? Math.Sqrt ((Points[^1].X - Points[0].X) * (Points[^1].X - Points[0].X) +
                (Points[^1].Y - Points[0].Y) * (Points[^1].Y - Points[0].Y)) : 0;
-
-   public override Dictionary<string, double>? Dimension {
-      get {
-         Dictionary<string, double> st = new () {
-            { "StartX", Points[0].X }
-            ,{ "StartY", Points [0].Y }, {"Length",Length}
-         };
-         return st;
-      }
-   }
 }
 public class Rectangle : Shape {
 
@@ -79,35 +60,31 @@ public class Rectangle : Shape {
       return s.ToString ();
    }
 
+   public override void Draw (DrawingCommands cmd) {
+      if (Color != null)
+         cmd.DrawRectangle (Points[0].X, Points[0].Y, Points[^1].X, Points[^1].Y, Color, Thickness);
+   }
+
+   public override Dictionary<string, double> GetDimension () => new () {
+      { "StartX", Points[0].X },
+      { "StartY", Points [0].Y },
+      {"Width",Width},
+      {"Height",Height }
+   };
+
    public override string prompt => Points.Count > 0 ? "Pick second corner of rectangle" : "Pick first corner of rectangle";
 
-   public double Width => Points.Count > 0 ? Math.Abs (Points[^1].X - Points[0].X) : 0;
+   public double Width => Points.Count > 0 ? (Points[^1].X - Points[0].X) : 0;
 
-   public double Height => Points.Count > 0 ? Math.Abs (Points[^1].Y - Points[0].Y) : 0;
-
-   public override Dictionary<string, double>? Dimension {
-      get {
-         Dictionary<string, double> st = new () {
-            { "StartX", Points[0].X } ,{ "StartY", Points [0].Y }
-            , {"Width",Width}, {"Height",Height }
-         };
-         return st;
-      }
-   }
+   public double Height => Points.Count > 0 ? (Points[^1].Y - Points[0].Y) : 0;
 }
 
 public class Circle : Shape {
 
    public double Radius { get { return GetRadius (); } set { mRadius = value; } }
 
-   private double GetRadius () {
-      mRadius = Math.Sqrt ((Points[^1].X - Points[0].X) * (Points[^1].X - Points[0].X) +
+   private double GetRadius () => mRadius = Math.Sqrt ((Points[^1].X - Points[0].X) * (Points[^1].X - Points[0].X) +
                (Points[^1].Y - Points[0].Y) * (Points[^1].Y - Points[0].Y));
-      double a = 500 - Math.Abs (Points[0].Y), b = 1000 - Math.Abs (Points[0].X);
-      if (mRadius <= a && mRadius <= b)
-         return mRadius;
-      return mRadius - 1;
-   }
 
    public override string ToString () {
       StringBuilder s = new ();
@@ -119,21 +96,50 @@ public class Circle : Shape {
       return s.ToString ();
    }
 
-   public override string prompt => Points.Count > 0 ? "Pick point on circle" : "Pick center point";
-
-   public override Dictionary<string, double>? Dimension {
-      get {
-         Dictionary<string, double> st = new () {
-            { "StartX", Points[0].X }
-            ,{ "StartY", Points [0].Y }, {"Radius",Radius}
-         };
-         return st;
-      }
+   public override void Draw (DrawingCommands cmd) {
+      if (Color != null)
+         cmd.DrawCircle (Points[0].X, Points[0].Y, Points[^1].X, Points[^1].Y, Color, Thickness);
    }
+
+   public override Dictionary<string, double> GetDimension () => new () {
+      { "StartX", Points[0].X },
+      { "StartY", Points [0].Y },
+      {"Radius",Radius}
+   };
+
+   public override string prompt => Points.Count > 0 ? "Pick point on circle" : "Pick center point";
 
    private double mRadius;
 }
 
+public class ConnectedLine : Shape {
+
+   public double CurrentLineLength { get; set; }
+
+   public List<(Point, Point)> LinePoints = new ();
+
+   public override string ToString () {
+      StringBuilder sb = new ();
+      sb.AppendLine (Color);
+      sb.AppendLine (Thickness.ToString ());
+      sb.AppendLine (LinePoints.Count.ToString ());
+      foreach (var item in LinePoints) {
+         sb.AppendLine (item.Item1.ToString ());
+         sb.AppendLine (item.Item2.ToString ());
+      }
+      return sb.ToString ();
+   }
+
+   public override void Draw (DrawingCommands cmd) {
+      cmd.DrawConnectedLine ();
+   }
+
+   public override Dictionary<string, double> GetDimension () {
+      throw new NotImplementedException ();
+   }
+
+   public override string prompt => Points.Count > 0 ? "Pick start point of connected Line" : "Pick start position of next line";
+}
 
 public struct Point {
 

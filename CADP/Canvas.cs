@@ -8,6 +8,8 @@ using BackEnd;
 using Line = BackEnd.Line;
 using Rectangle = BackEnd.Rectangle;
 using System.Windows.Controls;
+using Utils;
+using Point = BackEnd.Point;
 
 namespace CADP;
 
@@ -19,40 +21,43 @@ public partial class Canvas : System.Windows.Controls.Canvas {
       IsModified = false;
       CurrentShapeColor = "#000000";
       CurrentShapeThickness = 1;
-      mScaleValue = 1;
+      MouseWheel += Zoom;
+      MouseMove += ShowMousePt;
+      Loaded += delegate {
+         var bound = new Bound (new Point (-10, -10), new Point (1000, 500));
+         mProjXfm = Transform.ComputeZoomExtentsProjXfm (ActualWidth, ActualHeight, bound);
+         mInvProjXfm = mProjXfm; mInvProjXfm.Invert ();
+         InvalidateVisual ();
+      };
    }
-   #endregion 
+   #endregion
 
    #region Methods---------------------------------------------------
-   public void ScribbleOn () {
-      widget?.Detach ();
-      mCurrentShape = new Scribble () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness };
-      widget = new ScribbleWidget (this);
-      widget.Attach ();
-   }
-
    public void LineOn () {
-      widget?.Detach ();
+      mWidget?.Detach (this);
       mCurrentShape = new Line () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness };
-      widget = new LineWidget (this);
-      widget.Attach ();
+      mWidget = new LineWidget (this);
+      mWidget.Attach (this);
    }
 
    public void RectOn () {
-      widget?.Detach ();
+      mWidget?.Detach (this);
       mCurrentShape = new Rectangle () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness };
-      widget = new RectangleWidget (this);
-      widget.Attach ();
+      mWidget = new RectangleWidget (this);
+      mWidget.Attach (this);
    }
 
    public void CircleOn () {
-      widget?.Detach ();
+      mWidget?.Detach (this);
       mCurrentShape = new Circle () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness };
-      widget = new CircleWidget (this);
-      widget.Attach ();
+      mWidget = new CircleWidget (this);
+      mWidget.Attach (this);
    }
 
-   public void Pick () => mCurrentShape = null;
+   public void Pick () {
+      mWidget?.Detach (this);
+      mCurrentShape = null;
+   }
 
    public void Undo () {
       if (mShapes.Count == 0) return;
@@ -92,12 +97,25 @@ public partial class Canvas : System.Windows.Controls.Canvas {
       RenderMainWindowTools (false);
    }
 
-   public void Zoom (bool IsZoomIn) {
-      mScaleValue += IsZoomIn ? 0.1 : -0.1;
-      mScaleValue = mScaleValue < 0.8 ? 0.8 : mScaleValue;
-      mScaleValue = mScaleValue > 10.0 ? 10.0 : mScaleValue;
-      ScaleTransform scaleTransform = new (mScaleValue, mScaleValue);
-      LayoutTransform = scaleTransform;
+   public void Zoom (object sender, MouseWheelEventArgs e) {
+      mCurrentMousePosition = e.GetPosition (this);
+      if (e.Delta > 0) ZoomImplements (true);
+      else ZoomImplements (false);
+   }
+
+   public void ZoomImplements (bool IsZoomIn) {
+      double zoomFactor = 1.05;
+      if (IsZoomIn) zoomFactor = 1 / zoomFactor;
+      var ptDraw = mInvProjXfm.Transform (mCurrentMousePosition); // mouse point in drawing space
+                                                                  // Actual visible drawing area
+      System.Windows.Point cornerA = mInvProjXfm.Transform (new System.Windows.Point ()),
+         cornerB = mInvProjXfm.Transform (new System.Windows.Point (ActualWidth, ActualHeight));
+      var b = new Bound (new Point (cornerA.X, cornerA.Y), new Point (cornerB.X, cornerB.Y));
+      b = b.Inflated (new Point (ptDraw.X, ptDraw.Y), zoomFactor);
+      mProjXfm = Transform.ComputeZoomExtentsProjXfm (ActualWidth, ActualHeight, b);
+      mInvProjXfm = mProjXfm; mInvProjXfm.Invert ();
+      mWidget.InvProjXfm = mInvProjXfm;
+      InvalidateVisual ();
    }
 
    public void RenderMainWindowTools (bool IsInputbar) {
@@ -106,10 +124,11 @@ public partial class Canvas : System.Windows.Controls.Canvas {
       else ParentWindow.undoredo.InvalidateVisual ();
    }
 
-   private StackPanel AddStack () {
+   StackPanel AddStack () {
       StackPanel st = new () { Orientation = Orientation.Horizontal };
-      if (mCurrentShape != null && mCurrentShape.Dimension != null) {
-         foreach (var items in mCurrentShape.Dimension) {
+      if (mShapes.Count > 0 && mCurrentShape != null) {
+         Dictionary<string, double> DimensionValues = mCurrentShape.Points.Count == 0 ? mShapes[^1].GetDimension () : mCurrentShape.GetDimension ();
+         foreach (var items in DimensionValues) {
             st.Children.Add (new TextBlock () { Text = items.Key.ToString (), TextAlignment = TextAlignment.Center, Margin = new Thickness (5) });
             st.Children.Add (new TextBox () { Width = 50, Margin = new Thickness (5), Text = Math.Round (items.Value, 3).ToString () });
          }
@@ -124,17 +143,22 @@ public partial class Canvas : System.Windows.Controls.Canvas {
 
    public void AddNewShapeObject () {
       switch (mCurrentShape) {
-         case Scribble:
-            mCurrentShape = new Scribble () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness }; break;
-         case Rectangle:
-            mCurrentShape = new Rectangle () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness }; break;
          case Line:
             mCurrentShape = new Line () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness }; break;
+         case Rectangle:
+            mCurrentShape = new Rectangle () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness }; break;
          case Circle:
             mCurrentShape = new Circle () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness }; break;
       }
       IsDrawing = false;
       RenderMainWindowTools (true);
+   }
+
+   void ShowMousePt (object sender, MouseEventArgs e) {
+      MainWindow ParentWindow = (MainWindow)Window.GetWindow (VisualParent);
+      var ptCanvas = e.GetPosition (this);
+      var ptDrawing = mInvProjXfm.Transform (ptCanvas);
+      ParentWindow.MousePointpresenter.Text = $"Mouse: {ptCanvas.X:F2}, {ptCanvas.Y:F2} => {ptDrawing.X:F2}, {ptDrawing.Y:F2}";
    }
    #endregion
 
@@ -142,45 +166,8 @@ public partial class Canvas : System.Windows.Controls.Canvas {
    protected override void OnRender (DrawingContext dc) {
       base.OnRender (dc);
       RenderMainWindowTools (false);
-      foreach (var shape in mShapes) {
-         switch (shape) {
-            case Scribble scr:
-               Color sc = (Color)ColorConverter.ConvertFromString (scr.Color);
-               Brush sb = new SolidColorBrush (sc);
-               Pen sPen = new (sb, scr.Thickness);
-               for (int i = 0; i < scr.Points.Count - 1; i++) {
-                  dc.DrawLine (sPen, UnitConverter.InverseTransform (scr.Points[i], this.Height, this.Width),
-                     UnitConverter.InverseTransform (scr.Points[i + 1], this.Height, this.Width));
-               }
-               break;
-            case Rectangle rectangle:
-               Color rc = (Color)ColorConverter.ConvertFromString (rectangle.Color);
-               Brush rb = new SolidColorBrush (rc);
-               Pen rPen = new (rb, rectangle.Thickness);
-               Rect r = new (UnitConverter.InverseTransform (rectangle.Points[0], this.Height, this.Width),
-                  UnitConverter.InverseTransform (rectangle.Points[^1], this.Height, this.Width));
-               dc.DrawRectangle (Background, rPen, r);
-               break;
-            case Line line:
-               Color lc = (Color)ColorConverter.ConvertFromString (line.Color);
-               Brush lb = new SolidColorBrush (lc);
-               Pen lPen = new (lb, line.Thickness);
-               dc.DrawLine (lPen, UnitConverter.InverseTransform (line.Points[0], this.Height, this.Width),
-                 UnitConverter.InverseTransform (line.Points[^1], this.Height, this.Width));
-               break;
-            case Circle circle:
-               Color cc = (Color)ColorConverter.ConvertFromString (circle.Color);
-               Brush cb = new SolidColorBrush (cc);
-               Pen cPen = new (cb, circle.Thickness);
-               dc.DrawEllipse (Background, cPen, UnitConverter.InverseTransform (circle.Points[0], this.Height, this.Width), circle.Radius, circle.Radius);
-               break;
-         }
-      }
-   }
-
-   protected override void OnMouseWheel (MouseWheelEventArgs e) {
-      base.OnMouseWheel (e);
-      Zoom (e.Delta > 0);
+      foreach (var shape in mShapes)
+         shape.Draw (new DrawingCommands (dc, mProjXfm));
    }
    #endregion
 
@@ -188,6 +175,8 @@ public partial class Canvas : System.Windows.Controls.Canvas {
    public List<Shape> AllShapes { get => mShapes; set => mShapes = value; }
 
    public FileManager CanvasFileManager => mFile;
+
+   public Shape? CurrentShape => mCurrentShape ?? null;
 
    public bool IsNewFile { get; set; }
 
@@ -203,28 +192,25 @@ public partial class Canvas : System.Windows.Controls.Canvas {
 
    public bool IsPressedUndo => mPressedUndo;
 
-   public string CurrentShapePrompt {
-      get {
-         if (mCurrentShape != null)
-            return mCurrentShape.prompt;
-         return "Pick any shapes to draw";
-      }
-   }
+   public string CurrentShapePrompt => mCurrentShape != null ? mCurrentShape.prompt : "Pick any shapes to draw";
 
    public StackPanel CurrentShapeStack => AddStack ();
 
-   public Shape? CurrentShape => mCurrentShape ?? null;
-
    public Stack<Shape> UndoShapes => mUndoShapes;
+
+   public System.Windows.Point CurrentMousePosition { get => mCurrentMousePosition; set => mCurrentMousePosition = value; }
+
+   public Matrix InvProjXfm => mInvProjXfm;
    #endregion
 
-   #region Private --------------------------------------------------
+   #region Fields ---------------------------------------------------
    private Shape? mCurrentShape;
    private List<Shape> mShapes = new ();
    private readonly Stack<Shape> mUndoShapes = new ();
    private readonly FileManager mFile = new ();
-   private double mScaleValue;
    private bool mPressedUndo;
-   private Widget widget;
+   private Widget mWidget;
+   private Matrix mProjXfm = Matrix.Identity, mInvProjXfm = Matrix.Identity;
+   private System.Windows.Point mCurrentMousePosition;
    #endregion
 }

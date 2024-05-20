@@ -50,8 +50,6 @@ namespace CADP {
 
       private void Redo_Click (object sender, RoutedEventArgs e) => paintCanvas.Redo ();
 
-      private void Scribble_Click (object sender, RoutedEventArgs e) { paintCanvas.ScribbleOn (); Inputbar.InvalidateVisual (); }
-
       private void Rectangle_Click (object sender, RoutedEventArgs e) { paintCanvas.RectOn (); Inputbar.InvalidateVisual (); }
 
       private void Line_Click (object sender, RoutedEventArgs e) { paintCanvas.LineOn (); Inputbar.InvalidateVisual (); }
@@ -75,9 +73,15 @@ namespace CADP {
 
       private void Pick_Click (object sender, RoutedEventArgs e) => paintCanvas.Pick ();
 
-      private void ZoomIn_Click (object sender, RoutedEventArgs e) => paintCanvas.Zoom (true);
+      private void ZoomIn_Click (object sender, RoutedEventArgs e) {
+         paintCanvas.CurrentMousePosition = new Point (paintCanvas.ActualWidth / 2, paintCanvas.ActualHeight / 2);
+         paintCanvas.ZoomImplements (true);
+      }
 
-      private void ZoomOut_Click (object sender, RoutedEventArgs e) => paintCanvas.Zoom (false);
+      private void ZoomOut_Click (object sender, RoutedEventArgs e) {
+         paintCanvas.CurrentMousePosition = new Point (paintCanvas.ActualWidth / 2, paintCanvas.ActualHeight / 2);
+         paintCanvas.ZoomImplements (false);
+      }
 
       private void ClrPicker_SelectedColorChanged (object sender, RoutedPropertyChangedEventArgs<Color?> e) {
          Color? col = ((ColorPicker)sender).SelectedColor;
