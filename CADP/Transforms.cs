@@ -13,8 +13,8 @@ static class Transform {
       var viewMargin = 4;
       // Compute the scaling, to fit specified drawing extents into the view space
       double scaleX = (viewWidth - 2 * viewMargin) / b.Width, scaleY = (viewHeight - 2 * viewMargin) / b.Height;
-      //double scale = Math.Min (scaleX, scaleY);
-      var scaleMatrix = Matrix.Identity; scaleMatrix.Scale (scaleX, -scaleY);
+      double scale = Math.Min (scaleX, scaleY);
+      var scaleMatrix = Matrix.Identity; scaleMatrix.Scale (scale, -scale);
       // translation...
       System.Windows.Point pMid = scaleMatrix.Transform (new System.Windows.Point (b.Mid.X, b.Mid.Y));
       Point projectedMidPt = new (pMid.X, pMid.Y);

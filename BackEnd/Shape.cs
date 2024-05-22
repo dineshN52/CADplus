@@ -50,7 +50,7 @@ public class Line : Shape {
       {"Length",Length}
    };
 
-   public override string prompt => Points.Count > 0 ? "Pick End point" : "Pick Beginning point";
+   public override string prompt => Points.Count > 0 ? "  Pick End point" : "  Pick Beginning point";
    #endregion
 
    #region Properties------------------------------------------------
@@ -83,7 +83,7 @@ public class Rectangle : Shape {
       {"Height",Height }
    };
 
-   public override string prompt => Points.Count > 0 ? "Pick second corner of rectangle" : "Pick first corner of rectangle";
+   public override string prompt => Points.Count > 0 ? "  Pick second corner of rectangle" : "  Pick first corner of rectangle";
    #endregion
 
    #region Properties------------------------------------------------
@@ -122,7 +122,7 @@ public class Circle : Shape {
       {"Radius", Radius}
    };
 
-   public override string prompt => Points.Count > 0 ? "Pick point on circle" : "Pick center point";
+   public override string prompt => Points.Count > 0 ? "  Pick point on circle" : "  Pick center point";
    #endregion
 
    #region Property--------------------------------------------------
@@ -158,7 +158,7 @@ public class ConnectedLine : Shape {
       { "CurrentLineLength",CurrentLineLength}
    };
 
-   public override string prompt => Points.Count > 0 ? "Pick start point of connected Line" : "Pick start position of next line";
+   public override string prompt => Points.Count > 0 ? "  Pick start point of connected Line" : "  Pick start position of next line";
    #endregion
 
    #region Property--------------------------------------------------

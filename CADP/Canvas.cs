@@ -114,9 +114,8 @@ public partial class Canvas : System.Windows.Controls.Canvas {
       double zoomFactor = 1.05;
       if (IsZoomIn) zoomFactor = 1 / zoomFactor;
       var ptDraw = mInvProjXfm.Transform (mCurrentMousePosition); // mouse point in drawing space
-                                                                  // Actual visible drawing area
-      System.Windows.Point cornerA = mInvProjXfm.Transform (new System.Windows.Point ()),
-         cornerB = mInvProjXfm.Transform (new System.Windows.Point (ActualWidth, ActualHeight));
+      System.Windows.Point cornerA = mInvProjXfm.Transform (new System.Windows.Point (4,4)),
+         cornerB = mInvProjXfm.Transform (new System.Windows.Point (ActualWidth - 4, ActualHeight - 4));
       var b = new Bound (new Point (cornerA.X, cornerA.Y), new Point (cornerB.X, cornerB.Y));
       b = b.Inflated (new Point (ptDraw.X, ptDraw.Y), zoomFactor);
       mProjXfm = Transform.ComputeZoomExtentsProjXfm (ActualWidth, ActualHeight, b);
@@ -205,7 +204,7 @@ public partial class Canvas : System.Windows.Controls.Canvas {
 
    public bool IsPressedUndo => mPressedUndo;
 
-   public string CurrentShapePrompt => mCurrentShape != null ? mCurrentShape.prompt : "Pick any shapes to draw";
+   public string CurrentShapePrompt => mCurrentShape != null ? mCurrentShape.prompt : "  Pick any shapes to draw";
 
    public StackPanel CurrentShapeStack => AddStack ();
 
