@@ -56,6 +56,8 @@ namespace CADP {
 
       private void Circle_Click (object sender, RoutedEventArgs e) { paintCanvas.CircleOn (); Inputbar.InvalidateVisual (); }
 
+      private void ConnectedLine_Click (object sender, RoutedEventArgs e) { paintCanvas.ConnectedLineOn (); Inputbar.InvalidateVisual (); }
+
       private void MainWindow_Closing (object? sender, System.ComponentModel.CancelEventArgs e) {
          SaveMessagePop mPop = new (e, paintCanvas.CanvasFileManager, paintCanvas.IsNewFile) {
             Owner = this,
@@ -99,6 +101,8 @@ namespace CADP {
             e.Handled = true;
          }
       }
+
+      private void RibbonWindow_KeyDown (object sender, System.Windows.Input.KeyEventArgs e) => paintCanvas.Canvas_KeyDown (sender, e);
       #endregion
    }
    #endregion

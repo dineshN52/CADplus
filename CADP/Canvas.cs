@@ -54,6 +54,13 @@ public partial class Canvas : System.Windows.Controls.Canvas {
       mWidget.Attach (this);
    }
 
+   public void ConnectedLineOn () {
+      mWidget?.Detach (this);
+      mCurrentShape = new ConnectedLine () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness };
+      mWidget = new ConnectedLineWidget (this);
+      mWidget.Attach (this);
+   }
+
    public void Pick () {
       mWidget?.Detach (this);
       mCurrentShape = null;
@@ -114,7 +121,7 @@ public partial class Canvas : System.Windows.Controls.Canvas {
       b = b.Inflated (new Point (ptDraw.X, ptDraw.Y), zoomFactor);
       mProjXfm = Transform.ComputeZoomExtentsProjXfm (ActualWidth, ActualHeight, b);
       mInvProjXfm = mProjXfm; mInvProjXfm.Invert ();
-      mWidget.InvProjXfm = mInvProjXfm;
+      if (mWidget != null) mWidget.InvProjXfm = mInvProjXfm;
       InvalidateVisual ();
    }
 
@@ -149,6 +156,8 @@ public partial class Canvas : System.Windows.Controls.Canvas {
             mCurrentShape = new Rectangle () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness }; break;
          case Circle:
             mCurrentShape = new Circle () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness }; break;
+         case ConnectedLine:
+            mCurrentShape = new ConnectedLine () { Color = CurrentShapeColor, Thickness = CurrentShapeThickness }; break;
       }
       IsDrawing = false;
       RenderMainWindowTools (true);
@@ -158,7 +167,11 @@ public partial class Canvas : System.Windows.Controls.Canvas {
       MainWindow ParentWindow = (MainWindow)Window.GetWindow (VisualParent);
       var ptCanvas = e.GetPosition (this);
       var ptDrawing = mInvProjXfm.Transform (ptCanvas);
-      ParentWindow.MousePointpresenter.Text = $"Mouse: {ptCanvas.X:F2}, {ptCanvas.Y:F2} => {ptDrawing.X:F2}, {ptDrawing.Y:F2}";
+      ParentWindow.MousePointpresenter.Text = $"{ptDrawing.X:F2}, {ptDrawing.Y:F2}";
+   }
+
+   public void Canvas_KeyDown (object sender, KeyEventArgs e) {
+      if (e.Key == Key.Escape) AddNewShapeObject ();
    }
    #endregion
 

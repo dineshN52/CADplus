@@ -20,7 +20,7 @@ public class FileManager {
          int i = open.FilterIndex;
          if (i == 1) {
             string[] allShapes = File.ReadAllLines (open.FileName);
-            if (allShapes[0] is "Scribble" or "Rectangle" or "Line" or "Circle") f = Open (allShapes);
+            if (allShapes[0] is "Scribble" or "Rectangle" or "Line" or "Circle" or "ConnectedLine") f = Open (allShapes);
             else throw new FormatException ("Input is not in correct format");
          } else if (i == 2) {
             using FileStream fs = new (open.FileName, FileMode.Open);
@@ -67,6 +67,20 @@ public class FileManager {
                circle.Radius = double.Parse (allShapes[i + 4]);
                all.Add (circle);
                break;
+            case "ConnectedLine":
+               ConnectedLine cLine = new () {
+                  Color = allShapes[i + 1], Thickness = int.Parse (allShapes[i + 2])
+               };
+               int limit = (int.Parse (allShapes[i + 3]) - 2) / 2;
+               for (int j = 0; j < limit; j++) {
+                  Point p = Point.Parse (allShapes[i + j + 4]);
+                  cLine.LinePoints.Add (p.X);
+                  cLine.LinePoints.Add (p.Y);
+               }
+               cLine.HoverPoint = Point.Parse (allShapes[i + limit + 4]);
+               limits = limits + limit + 5;
+               all.Add (cLine);
+               break;
          }
       }
       return all;
@@ -112,6 +126,20 @@ public class FileManager {
                all.Add (circle);
                counts -= 40;
                break;
+            case 4:
+               ConnectedLine cline = new () {
+                  Color = Encoding.Default.GetString (br.ReadBytes (7)),
+                  Thickness = BitConverter.ToInt32 (br.ReadBytes (4), 0)
+               };
+               int limit = BitConverter.ToInt32 (br.ReadBytes (4));
+               List<double> Coordinates = new ();
+               for (int i = 0; i < limit - 16; i += 8)
+                  Coordinates.Add (BitConverter.ToDouble (br.ReadBytes (8)));
+               cline.HoverPoint = new Point (BitConverter.ToDouble (br.ReadBytes (8)), BitConverter.ToDouble (br.ReadBytes (8)));
+               cline.LinePoints = Coordinates;
+               all.Add (cline);
+               counts -= limit + 20;
+               break;
             default:
                throw new FormatException ("Input is not in correct format");
          }
@@ -127,6 +155,8 @@ public class FileManager {
          FilterIndex = IsText ? 1 : 2
       };
       if (dialog.ShowDialog () == true) {
+         string s = string.Join ("", dialog.FileName.TakeLast (3).ToArray ());
+         IsText = s == "txt";
          ActualSave (allShapes, IsText, dialog.FileName);
          if (IsNewFile) { mCurrentFileName = dialog.FileName; return true; }
       }
@@ -182,6 +212,14 @@ public class FileManager {
                bw.Write (circle.Points[0].X);
                bw.Write (circle.Points[0].Y);
                bw.Write (circle.Radius);
+               break;
+            case ConnectedLine cLine:
+               bw.Write (4);
+               if (cLine.Color != null) bw.Write (cLine.Color);
+               bw.Write (cLine.Thickness);
+               bw.Write (cLine.LinePoints.Count * 8);
+               foreach (var item in cLine.LinePoints)
+                  bw.Write (item);
                break;
          }
       }

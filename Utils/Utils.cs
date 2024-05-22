@@ -37,10 +37,26 @@ public class DrawingCommands {
       mDc.DrawEllipse (Brushes.Transparent, cPen, center, Radius, Radius);
    }
 
-   public void DrawConnectedLine () { }
+   public void DrawConnectedLine (List<double> CoOrdinates, double HoverX, double HoverY, string color, int thickness) {
+      List<Point> points = new ();
+      Point hoverPt = new (HoverX, HoverY); hoverPt = mMatrix.Transform (hoverPt);
+      Color clc = (Color)ColorConverter.ConvertFromString (color);
+      Brush clb = new SolidColorBrush (clc);
+      Pen clPen = new (clb, thickness);
+      for (int i = 0; i < CoOrdinates.Count; i += 2) {
+         Point p = new (CoOrdinates[i], CoOrdinates[i + 1]);
+         points.Add (mMatrix.Transform (p));
+      }
+      if (points.Count > 1) {
+         for (int i = 0; i < points.Count - 1; i++)
+            mDc.DrawLine (clPen, points[i], points[i + 1]);
+      }
+      if (hoverPt != null)
+         mDc.DrawLine (clPen, points[^1], hoverPt);
+   }
    #endregion
 
-   #region Private---------------------------------------------------
+   #region Fields----------------------------------------------------
    readonly DrawingContext mDc;
    readonly Matrix mMatrix;
    #endregion

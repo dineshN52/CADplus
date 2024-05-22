@@ -17,8 +17,11 @@ public interface IWidget {
 
 public class Widget : IWidget {
 
+   #region Constructor-----------------------------------------------
    public Widget (Canvas m) => owner = m;
+   #endregion
 
+   #region Interface implementation----------------------------------
    public void Attach (object sender) {
       mInvProjXfm = owner.InvProjXfm;
       owner.MouseDown += OnMouseDown;
@@ -52,29 +55,75 @@ public class Widget : IWidget {
       owner.RenderMainWindowTools (true);
       owner.InvalidateVisual ();
    }
+   #endregion
 
+   #region Properties------------------------------------------------
    public Matrix InvProjXfm { get => mInvProjXfm; set => mInvProjXfm = value; }
+   #endregion
 
-   Canvas owner = new ();
-   Matrix mInvProjXfm;
+   #region Fields----------------------------------------------------
+   protected Canvas owner = new ();
+   protected Matrix mInvProjXfm;
+   #endregion
 }
 
 public class RectangleWidget : Widget {
-   public RectangleWidget (Canvas m) : base (m) {
-   }
+
+   #region Constructor-----------------------------------------------
+   public RectangleWidget (Canvas m) : base (m) { }
+   #endregion
 }
 
 public class LineWidget : Widget {
-   public LineWidget (Canvas m) : base (m) {
-   }
+
+   #region Constructor-----------------------------------------------
+   public LineWidget (Canvas m) : base (m) { }
+   #endregion
 }
 
 public class CircleWidget : Widget {
-   public CircleWidget (Canvas m) : base (m) {
-   }
+
+   #region Constructor-----------------------------------------------
+   public CircleWidget (Canvas m) : base (m) { }
+   #endregion
 }
 
 public class ConnectedLineWidget : Widget {
-   public ConnectedLineWidget (Canvas m) : base (m) {
+
+   #region Constructor-----------------------------------------------
+   public ConnectedLineWidget (Canvas m) : base (m) => owner = m;
+   #endregion
+
+   #region Overrides-------------------------------------------------
+   public override void OnMouseDown (object sender, MouseButtonEventArgs e) {
+      if (e.LeftButton == MouseButtonState.Pressed && owner.CurrentShape != null) {
+         System.Windows.Point p = mInvProjXfm.Transform (e.GetPosition (owner));
+         ((ConnectedLine)owner.CurrentShape).LinePoints.Add (p.X);
+         ((ConnectedLine)owner.CurrentShape).LinePoints.Add (p.Y);
+         if (((ConnectedLine)owner.CurrentShape).LinePoints.Count == 2) {
+            owner.AllShapes.Add (owner.CurrentShape);
+            owner.IsDrawing = true;
+            owner.RenderMainWindowTools (true);
+         }
+         if (owner.IsPressedUndo) owner.UndoShapes.Clear ();
+         owner.RenderMainWindowTools (true);
+      }
    }
+   public override void OnMouseMove (object sender, MouseEventArgs e) {
+      if (e.LeftButton == MouseButtonState.Released) {
+         if (owner.CurrentShape != null && ((ConnectedLine)owner.CurrentShape).LinePoints.Count > 1) {
+            System.Windows.Point p = mInvProjXfm.Transform (e.GetPosition (owner));
+            ((ConnectedLine)owner.CurrentShape).HoverPoint = new Point (p.X, p.Y);
+            owner.IsModified = true;
+         }
+      } else if (e.LeftButton == MouseButtonState.Pressed && owner.CurrentShape != null) {
+         System.Windows.Point p = mInvProjXfm.Transform (e.GetPosition (owner));
+         ((ConnectedLine)owner.CurrentShape).LinePoints.Add (p.X);
+         ((ConnectedLine)owner.CurrentShape).LinePoints.Add (p.Y);
+         owner.CurrentShape.Points.Clear ();
+      }
+      owner.RenderMainWindowTools (true);
+      owner.InvalidateVisual ();
+   }
+   #endregion
 }

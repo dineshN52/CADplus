@@ -2,12 +2,13 @@
 using System.Windows.Media;
 using System.Collections.Generic;
 using System.Linq;
-using BackEnd;
 using Point = BackEnd.Point;
 
 namespace CADP;
 
 static class Transform {
+
+   #region Methods---------------------------------------------------
    public static Matrix ComputeZoomExtentsProjXfm (double viewWidth, double viewHeight, Bound b) {
       var viewMargin = 4;
       // Compute the scaling, to fit specified drawing extents into the view space
@@ -23,6 +24,7 @@ static class Transform {
       scaleMatrix.Append (translateMatrix);
       return scaleMatrix;
    }
+   #endregion
 }
 
 //class PanWidget { // Works in screen space
